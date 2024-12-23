@@ -20,6 +20,9 @@ class PokerHelper:
         self.ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
         self.suits = ['♠', '♥', '♣', '♦']
         
+        # 添加缓存字典
+        self.hand_strength_cache = {}
+        
         self.setup_gui()
         
     def setup_gui(self):
@@ -67,12 +70,34 @@ class PokerHelper:
         calc_button = ttk.Button(self.window, text="计算胜率", command=self.calculate_odds)
         calc_button.pack(pady=10)
         
+        # 添加进度条
+        self.progress_var = tk.DoubleVar()
+        self.progress_bar = ttk.Progressbar(
+            self.window,
+            variable=self.progress_var,
+            maximum=100,
+            length=300,
+            mode='determinate'
+        )
+        self.progress_bar.pack(pady=5)
+        
+        # 进度标签
+        self.progress_label = ttk.Label(self.window, text="")
+        self.progress_label.pack(pady=5)
+        
         # 结果显示
         self.result_label = ttk.Label(self.window, text="")
         self.result_label.pack(pady=10)
         
     def get_hand_strength(self, cards):
-        # 改进牌力计算方法
+        # 将牌组转换为可哈希的元组用于缓存
+        cards_tuple = tuple(sorted((card.rank, card.suit) for card in cards))
+        
+        # 检查缓存中是否已有结果
+        if cards_tuple in self.hand_strength_cache:
+            return self.hand_strength_cache[cards_tuple]
+            
+        # 以下是原有的牌力计算代码
         ranks = [card.rank for card in cards]
         suits = [card.suit for card in cards]
         
@@ -109,47 +134,44 @@ class PokerHelper:
         
         # 返回牌力得分和关键牌值
         if flush and straight:
-            return (8, max(rank_values))  # 同花顺
-        
-        # 检查四条
-        if 4 in rank_counts.values():
+            result = (8, max(rank_values))  # 同花顺
+        elif 4 in rank_counts.values():
             four_rank = [r for r, count in rank_counts.items() if count == 4][0]
             kicker = max([r for r in rank_values if r != four_rank])
-            return (7, four_rank, kicker)  # 四条
-        
-        # 检查葫芦
-        if 3 in rank_counts.values() and 2 in rank_counts.values():
+            result = (7, four_rank, kicker)  # 四条
+        elif 3 in rank_counts.values() and 2 in rank_counts.values():
             three_rank = [r for r, count in rank_counts.items() if count == 3][0]
             pair_rank = max([r for r, count in rank_counts.items() if count == 2])
-            return (6, three_rank, pair_rank)  # 葫芦
-        
-        if flush:
+            result = (6, three_rank, pair_rank)  # 葫芦
+        elif flush:
             flush_ranks = sorted([rank_values[i] for i, suit in enumerate(suits) 
                                 if suit == max(suit_counts, key=suit_counts.get)], reverse=True)[:5]
-            return (5, flush_ranks)  # 同花
-        
-        if straight:
+            result = (5, flush_ranks)  # 同花
+        elif straight:
             straight_high = max(i for i in range(len(rank_values)-4) 
                               if rank_values[i] - rank_values[i+4] == 4)
-            return (4, rank_values[straight_high])  # 顺子
-        
-        if 3 in rank_counts.values():
+            result = (4, rank_values[straight_high])  # 顺子
+        elif 3 in rank_counts.values():
             three_rank = [r for r, count in rank_counts.items() if count == 3][0]
             kickers = sorted([r for r in rank_values if r != three_rank], reverse=True)[:2]
-            return (3, three_rank, kickers)  # 三条
-        
+            result = (3, three_rank, kickers)  # 三条
         pairs = [r for r, count in rank_counts.items() if count == 2]
         if len(pairs) == 2:
             kicker = max([r for r in rank_values if r not in pairs])
-            return (2, sorted(pairs, reverse=True), kicker)  # 两对
-        
-        if len(pairs) == 1:
+            result = (2, sorted(pairs, reverse=True), kicker)  # 两对
+        elif len(pairs) == 1:
             kickers = sorted([r for r in rank_values if r != pairs[0]], reverse=True)[:3]
-            return (1, pairs[0], kickers)  # 一对
-        
-        return (0, rank_values[:5])  # 高牌
+            result = (1, pairs[0], kickers)  # 一对
+        else:
+            result = (0, rank_values[:5])  # 高牌
+            
+        self.hand_strength_cache[cards_tuple] = result
+        return result
 
     def calculate_odds(self):
+        # 在每次新的计算开始时清空缓存
+        self.hand_strength_cache = {}
+        
         # 获取已知牌
         known_cards = []
         
@@ -193,15 +215,34 @@ class PokerHelper:
         # 对手的手牌组合数
         opponent_combinations = nCr(remaining_cards, 2)
         
+        # 重置进度条
+        self.progress_var.set(0)
+        self.progress_label.config(text="正在计算中...")
+        self.window.update()
+        
         # 如果还有公共牌要发
         if remaining_community > 0:
             # 计算剩余公共牌的组合数
             community_combinations = nCr(remaining_cards - 2, remaining_community)
             total_possibilities = opponent_combinations * community_combinations
             
+            # 计算总迭代次数用于进度显示
+            total_iterations = opponent_combinations
+            current_iteration = 0
+            
             # 遍历所有可能的对手手牌
             for opp_cards in itertools.combinations(deck, 2):
                 remaining_deck = [card for card in deck if card not in opp_cards]
+                
+                # 更新进度
+                current_iteration += 1
+                progress = (current_iteration / total_iterations) * 100
+                self.progress_var.set(progress)
+                self.progress_label.config(
+                    text=f"已计算: {current_iteration:,} / {total_iterations:,} 种组合"
+                )
+                if current_iteration % 100 == 0:  # 每100次更新一次界面
+                    self.window.update()
                 
                 # 遍历所有可能的公共牌
                 for comm_cards in itertools.combinations(remaining_deck, remaining_community):
@@ -218,9 +259,20 @@ class PokerHelper:
         else:
             # 如果公共牌已经全部发出
             total_possibilities = opponent_combinations
+            current_iteration = 0
             
             # 遍历所有可能的对手手牌
             for opp_cards in itertools.combinations(deck, 2):
+                # 更新进度
+                current_iteration += 1
+                progress = (current_iteration / opponent_combinations) * 100
+                self.progress_var.set(progress)
+                self.progress_label.config(
+                    text=f"已计算: {current_iteration:,} / {opponent_combinations:,} 种组合"
+                )
+                if current_iteration % 100 == 0:  # 每100次更新一次界面
+                    self.window.update()
+                
                 # 计算双方的牌力
                 player_strength = self.get_hand_strength(known_cards[:2] + community)
                 opponent_strength = self.get_hand_strength(list(opp_cards) + community)
@@ -229,6 +281,10 @@ class PokerHelper:
                     favorable_outcomes += 1
                 elif player_strength == opponent_strength:
                     favorable_outcomes += 0.5
+        
+        # 计算完成后更新进度条和标签
+        self.progress_var.set(100)
+        self.progress_label.config(text="计算完成！")
         
         # 计算精确胜率
         win_probability = (favorable_outcomes / total_possibilities) * 100
