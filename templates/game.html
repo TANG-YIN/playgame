@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>德州扑克 - 游戏房间</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="game-container">
+        <header>
+            <div class="header-left">
+                <h1>德州扑克</h1>
+                <span class="room-id" id="roomId">房间: {{ room_id }}</span>
+            </div>
+            <div class="header-right">
+                <button class="btn btn-small" onclick="leaveRoom()">离开房间</button>
+                <button class="btn btn-small" onclick="restartGame()">重新开始</button>
+            </div>
+        </header>
+
+        <main class="game-main">
+            <!-- 公共区域 -->
+            <section class="public-area">
+                <div class="game-info">
+                    <div class="info-item">
+                        <span class="label">阶段:</span>
+                        <span class="value" id="gameState">等待玩家</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">底池:</span>
+                        <span class="value" id="pot">0</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">当前注额:</span>
+                        <span class="value" id="currentBet">0</span>
+                    </div>
+                </div>
+
+                <div class="community-cards" id="communityCards">
+                    <div class="placeholder">等待发牌...</div>
+                </div>
+            </section>
+
+            <!-- 玩家区域 -->
+            <section class="players-area" id="playersArea">
+                <!-- 动态生成的玩家信息 -->
+            </section>
+
+            <!-- 我的游戏区域 -->
+            <section class="my-game-area" id="myGameArea">
+                <div class="my-cards" id="myCards">
+                    <div class="placeholder">等待发牌...</div>
+                </div>
+
+                <div class="action-buttons" id="actionButtons">
+                    <button class="btn btn-action" onclick="playerAction('fold')" id="foldBtn">弃牌</button>
+                    <button class="btn btn-action" onclick="playerAction('check')" id="checkBtn">过牌</button>
+                    <button class="btn btn-action" onclick="playerAction('call')" id="callBtn">跟注</button>
+                    <button class="btn btn-action" onclick="raiseBet()" id="raiseBtn">加注</button>
+                    <button class="btn btn-action btn-allin" onclick="playerAction('allin')" id="allinBtn">全押</button>
+                </div>
+
+                <div class="raise-input" id="raiseInput" style="display: none;">
+                    <input type="number" id="raiseAmount" min="0" step="10" placeholder="加注金额">
+                    <button class="btn btn-small" onclick="confirmRaise()">确认</button>
+                    <button class="btn btn-small" onclick="cancelRaise()">取消</button>
+                </div>
+            </section>
+
+            <!-- 游戏消息 -->
+            <section class="game-messages" id="gameMessages">
+                <div class="message">欢迎来到德州扑克游戏！</div>
+            </section>
+        </main>
+    </div>
+
+    <!-- 开始游戏模态框 -->
+    <div class="modal" id="startModal" style="display: none;">
+        <div class="modal-content">
+            <h2>准备开始游戏</h2>
+            <p>当前玩家: <span id="playerCount">0</span>/6</p>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="startGame()" id="startGameBtn">开始游戏</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 游戏结束模态框 -->
+    <div class="modal" id="endModal" style="display: none;">
+        <div class="modal-content">
+            <h2>游戏结束</h2>
+            <p id="winnerInfo"></p>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="restartGame()">再来一局</button>
+                <button class="btn btn-secondary" onclick="closeModal('endModal')">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+        const roomId = "{{ room_id }}";
+    </script>
+    <script src="{{ url_for('static', filename='js/game.js') }}"></script>
+</body>
+</html>

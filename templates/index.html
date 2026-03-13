@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>德州扑克在线游戏</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🃏 德州扑克在线游戏</h1>
+            <p class="subtitle">支持2-6人在线对战</p>
+        </header>
+
+        <main>
+            <section class="join-section">
+                <h2>加入游戏</h2>
+                
+                <div class="form-group">
+                    <label for="playerName">玩家名称</label>
+                    <input type="text" id="playerName" placeholder="请输入你的名称" maxlength="20">
+                </div>
+
+                <div class="form-group">
+                    <label for="roomSelect">选择房间</label>
+                    <div class="room-list" id="roomList">
+                        <div class="loading">加载中...</div>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="joinRoom()">加入房间</button>
+                    <button class="btn btn-secondary" onclick="createRoom()">创建新房间</button>
+                    <button class="btn btn-tertiary" onclick="refreshRooms()">刷新房间列表</button>
+                </div>
+            </section>
+
+            <section class="info-section">
+                <h2>游戏说明</h2>
+                <div class="info-cards">
+                    <div class="info-card">
+                        <h3>🎮 基本玩法</h3>
+                        <ul>
+                            <li>每位玩家发2张手牌</li>
+                            <li>翻牌、转牌、河牌各发公共牌</li>
+                            <li>通过下注、跟注、加注进行博弈</li>
+                            <li>最后摊牌比较牌力大小</li>
+                        </ul>
+                    </div>
+
+                    <div class="info-card">
+                        <h3>🏆 牌型大小</h3>
+                        <ol>
+                            <li>同花顺 > 四条 > 葫芦</li>
+                            <li>同花 > 顺子 > 三条</li>
+                            <li>两对 > 一对 > 高牌</li>
+                        </ol>
+                    </div>
+
+                    <div class="info-card">
+                        <h3>💰 游戏规则</h3>
+                        <ul>
+                            <li>初始筹码: 1000</li>
+                            <li>小盲: 10, 大盲: 20</li>
+                            <li>支持过牌、跟注、加注、全押、弃牌</li>
+                            <li>筹码归零玩家出局</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2024 德州扑克在线游戏 | 支持2-6人多人对战</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/index.js') }}"></script>
+</body>
+</html>
