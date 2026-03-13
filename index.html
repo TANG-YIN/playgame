@@ -279,6 +279,82 @@
         .card.black {
             color: #1f2937;
         }
+        
+        .card-back {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            border: 3px solid white;
+            color: white;
+        }
+        
+        .card-back::after {
+            content: "🂠";
+            font-size: 2em;
+        }
+        
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal.show {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 500px;
+            animation: modalIn 0.3s ease-out;
+        }
+        
+        @keyframes modalIn {
+            from {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .modal-title {
+            font-size: 2em;
+            color: #1e3c72;
+            margin-bottom: 20px;
+        }
+        
+        .modal-message {
+            font-size: 1.2em;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .modal-close {
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .modal-close:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
     </style>
 </head>
 <body>
@@ -351,6 +427,15 @@
             <div class="message info">欢迎来到德州扑克！点击"开始新游戏"开始。</div>
         </div>
     </div>
+    
+    <!-- 胜利模态框 -->
+    <div class="modal" id="winnerModal">
+        <div class="modal-content">
+            <h2 class="modal-title">🎉 本局结束</h2>
+            <p class="modal-message" id="winnerMessage"></p>
+            <button class="modal-close" onclick="closeWinnerModal()">确定</button>
+        </div>
+    </div>
 
     <script>
     // 纯前端版德州扑克游戏
@@ -379,6 +464,15 @@
                 <div class="card ${isRed ? 'red' : 'black'}">
                     <div class="card-rank">${this.rank}</div>
                     <div class="card-suit">${this.suit}</div>
+                </div>
+            `;
+        }
+        
+        toBackHTML() {
+            return `
+                <div class="card card-back">
+                    <div class="card-rank"></div>
+                    <div class="card-suit"></div>
                 </div>
             `;
         }
@@ -678,16 +772,42 @@
             this.currentBet = 0;
             this.players.forEach(p => p.currentBet = 0);
             
+            // 检查是否只剩下1个玩家
+            const activePlayers = this.players.filter(p => !p.isFolded);
+            if (activePlayers.length === 1) {
+                this.showdown();
+                return;
+            }
+            
+            // 检查是否所有玩家都All-in了
+            const nonAllInPlayers = activePlayers.filter(p => !p.isAllIn);
+            if (nonAllInPlayers.length === 0) {
+                // 所有玩家都All-in了，直接发完所有公共牌然后摊牌
+                while (this.communityCards.length < 5) {
+                    this.communityCards.push(this.deck.deal());
+                }
+                this.gameStage = 'showdown';
+                this.showdown();
+                return;
+            }
+            
+            // 根据当前阶段决定下一阶段
             if (this.gameStage === 'preflop') {
-                this.dealCommunityCards(3);
-                this.gameStage = 'flop';
-            } else if (this.gameStage === 'flop') {
-                this.dealCommunityCards(1);
-                this.gameStage = 'turn';
-            } else if (this.gameStage === 'turn') {
-                this.dealCommunityCards(1);
-                this.gameStage = 'river';
-            } else if (this.gameStage === 'river') {
+                this.dealCommunityCards(1); // 第1张公共牌
+                this.gameStage = 'community1';
+            } else if (this.gameStage === 'community1') {
+                this.dealCommunityCards(1); // 第2张公共牌
+                this.gameStage = 'community2';
+            } else if (this.gameStage === 'community2') {
+                this.dealCommunityCards(1); // 第3张公共牌
+                this.gameStage = 'community3';
+            } else if (this.gameStage === 'community3') {
+                this.dealCommunityCards(1); // 第4张公共牌
+                this.gameStage = 'community4';
+            } else if (this.gameStage === 'community4') {
+                this.dealCommunityCards(1); // 第5张公共牌
+                this.gameStage = 'finalbet';
+            } else if (this.gameStage === 'finalbet') {
                 this.showdown();
                 return;
             }
@@ -709,6 +829,7 @@
             if (activePlayers.length === 1) {
                 const winner = activePlayers[0];
                 winner.chips += this.pot;
+                showWinnerModal(`${winner.name} 赢得本局！获得 ${this.pot} 筹码`);
                 addMessage(`${winner.name} 赢得 ${this.pot} 筹码！`, 'success');
             } else {
                 let bestPlayer = null;
@@ -726,6 +847,7 @@
                 
                 bestPlayer.chips += this.pot;
                 const handName = HandEvaluator.getHandName(HandEvaluator.evaluate(bestPlayer.hand.concat(this.communityCards))[0]);
+                showWinnerModal(`${bestPlayer.name} 赢得本局！\n牌型：${handName}\n获得筹码：${this.pot}`);
                 addMessage(`${bestPlayer.name} 赢得 ${this.pot} 筹码！牌型：${handName}`, 'success');
             }
             
@@ -856,9 +978,18 @@
             
             // 更新玩家列表
             const playersSection = document.getElementById('playersSection');
+            const showAllCards = this.gameStage === 'showdown';
+            
             playersSection.innerHTML = this.players.map((player, index) => {
                 const isActive = index === this.currentPlayerIndex;
                 const statusClass = player.isFolded ? 'folded' : (player.isAllIn ? 'allin' : '');
+                const isMyPlayer = index === 0;
+                
+                // 只显示自己的手牌，或者在showdown阶段显示所有人的手牌
+                const showCards = isMyPlayer || showAllCards;
+                const cardsHTML = showCards 
+                    ? player.hand.map(c => c.toHTML()).join('')
+                    : player.hand.map(c => c.toBackHTML()).join('');
                 
                 return `
                     <div class="player-card ${isActive ? 'current' : ''}">
@@ -870,7 +1001,7 @@
                             筹码: ${player.chips} | 下注: ${player.currentBet}
                         </div>
                         <div class="my-cards" style="margin-top: 10px;">
-                            ${player.hand.map(c => c.toHTML()).join('')}
+                            ${cardsHTML}
                         </div>
                     </div>
                 `;
@@ -910,9 +1041,11 @@
             const names = {
                 'waiting': '等待开始',
                 'preflop': '翻牌前',
-                'flop': '翻牌',
-                'turn': '转牌',
-                'river': '河牌',
+                'community1': '第1张公共牌',
+                'community2': '第2张公共牌',
+                'community3': '第3张公共牌',
+                'community4': '第4张公共牌',
+                'finalbet': '最后一轮下注',
                 'showdown': '摊牌'
             };
             return names[this.gameStage] || this.gameStage;
@@ -957,6 +1090,17 @@
     document.addEventListener('DOMContentLoaded', function() {
         // 不自动开始，等待用户点击
     });
+    
+    // 显示胜利模态框
+    function showWinnerModal(message) {
+        document.getElementById('winnerMessage').innerHTML = message.replace(/\n/g, '<br>');
+        document.getElementById('winnerModal').classList.add('show');
+    }
+    
+    // 关闭胜利模态框
+    function closeWinnerModal() {
+        document.getElementById('winnerModal').classList.remove('show');
+    }
     </script>
 </body>
 </html>
