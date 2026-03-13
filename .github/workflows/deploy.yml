@@ -26,6 +26,7 @@ jobs:
           mkdir -p _site
           cp -r templates _site/
           cp -r static _site/
+          cp index.html _site/
 
       - name: Create index.html (redirect to game)
         run: |
