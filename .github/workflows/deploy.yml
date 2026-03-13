@@ -24,12 +24,10 @@ jobs:
       - name: Create static version
         run: |
           mkdir -p _site
-          cp -r templates _site/ 2>/dev/null || true
-          cp -r static _site/ 2>/dev/null || true
-          cp README.md _site/ 2>/dev/null || true
-          cp requirements.txt _site/ 2>/dev/null || true
+          cp -r templates _site/
+          cp -r static _site/
 
-      - name: Create index.html
+      - name: Create index.html (redirect to game)
         run: |
           cat > _site/index.html << 'EOF'
           <!DOCTYPE html>
@@ -38,110 +36,14 @@ jobs:
               <meta charset="UTF-8">
               <meta name="viewport" content="width=device-width, initial-scale=1.0">
               <title>德州扑克在线游戏</title>
-              <style>
-                  * { margin: 0; padding: 0; box-sizing: border-box; }
-                  body {
-                      font-family: 'Arial', sans-serif;
-                      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-                      color: white;
-                      min-height: 100vh;
-                      display: flex;
-                      justify-content: center;
-                      align-items: center;
-                      padding: 20px;
-                  }
-                  .container {
-                      max-width: 800px;
-                      padding: 40px;
-                      background: rgba(255,255,255,0.1);
-                      border-radius: 20px;
-                      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-                  }
-                  h1 { font-size: 2.5em; margin-bottom: 20px; text-align: center; }
-                  .emoji { font-size: 1.5em; }
-                  .info { margin: 20px 0; line-height: 1.8; }
-                  .features { margin: 30px 0; }
-                  .feature-item {
-                      background: rgba(255,255,255,0.1);
-                      padding: 15px;
-                      margin: 10px 0;
-                      border-radius: 10px;
-                      border-left: 4px solid #fbbf24;
-                  }
-                  .instructions {
-                      background: rgba(0,0,0,0.2);
-                      padding: 20px;
-                      border-radius: 10px;
-                      margin: 20px 0;
-                  }
-                  code {
-                      background: rgba(255,255,255,0.2);
-                      padding: 2px 8px;
-                      border-radius: 4px;
-                      font-family: 'Courier New', monospace;
-                  }
-                  .warning {
-                      background: rgba(251, 191, 36, 0.2);
-                      padding: 20px;
-                      border-radius: 10px;
-                      border-left: 4px solid #f59e0b;
-                      margin: 20px 0;
-                  }
-              </style>
+              <script>
+                  window.location.href = '/game-standalone.html';
+              </script>
           </head>
           <body>
-              <div class="container">
-                  <h1><span class="emoji">🃏</span> 德州扑克在线游戏</h1>
-                  
-                  <div class="info">
-                      <p>一个支持2-6人在线对战的德州扑克Web应用</p>
-                      <p>具有实时通信和精美界面</p>
-                  </div>
-
-                  <div class="features">
-                      <h2>✨ 游戏特性</h2>
-                      <div class="feature-item">🎮 实时多人在线对战（2-6人）</div>
-                      <div class="feature-item">🚀 WebSocket实时通信</div>
-                      <div class="feature-item">🎨 现代化Web界面</div>
-                      <div class="feature-item">🏠 房间管理系统</div>
-                      <div class="feature-item">📊 自动牌力评估</div>
-                      <div class="feature-item">💡 响应式设计</div>
-                  </div>
-
-                  <div class="warning">
-                      <h3>⚠️ 重要说明</h3>
-                      <p><strong>这是一个Flask Web应用，需要后端服务器运行。</strong></p>
-                      <p>GitHub Pages仅支持静态网站托管，无法直接运行Flask应用。</p>
-                      <p>请按照以下步骤在本地运行游戏：</p>
-                  </div>
-
-                  <div class="instructions">
-                      <h3>📋 本地运行步骤</h3>
-                      <p>1. 克隆仓库：</p>
-                      <p><code>git clone https://github.com/TANG-YIN/playgame.git</code></p>
-                      
-                      <p style="margin-top: 15px;">2. 安装依赖：</p>
-                      <p><code>pip install Flask Flask-SocketIO</code></p>
-                      
-                      <p style="margin-top: 15px;">3. 运行服务器：</p>
-                      <p><code>python app.py</code></p>
-                      
-                      <p style="margin-top: 15px;">4. 打开浏览器访问：</p>
-                      <p><code>http://127.0.0.1:5000</code></p>
-                  </div>
-
-                  <div class="instructions">
-                      <h3>🌐 云端部署选项</h3>
-                      <p>• <strong>Heroku</strong>: 免费部署，支持Flask应用</p>
-                      <p>• <strong>Railway</strong>: 现代化部署平台，支持WebSocket</p>
-                      <p>• <strong>Render</strong>: 免费托管，支持Python应用</p>
-                      <p>• <strong>云服务器</strong>: 阿里云、腾讯云等</p>
-                  </div>
-
-                  <div class="info" style="text-align: center; margin-top: 30px;">
-                      <p>📂 项目地址: <a href="https://github.com/TANG-YIN/playgame" style="color: #fbbf24;">https://github.com/TANG-YIN/playgame</a></p>
-                      <p style="margin-top: 10px;">🎮 祝你游戏愉快！</p>
-                  </div>
+              <div style="text-align: center; margin-top: 50px;">
+                  <h1>正在跳转到游戏页面...</h1>
+                  <p>如果没有跳转，请 <a href="/game-standalone.html">点击这里</a></p>
               </div>
           </body>
           </html>

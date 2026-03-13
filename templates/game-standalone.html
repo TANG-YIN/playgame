@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>德州扑克 - 在线游戏</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .game-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(0,0,0,0.3);
+            border-radius: 15px;
+            padding: 20px;
+        }
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+        }
+        
+        h1 {
+            color: white;
+            margin: 0;
+            font-size: 1.8em;
+        }
+        
+        .game-info {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .info-item {
+            text-align: center;
+        }
+        
+        .info-item label {
+            color: #9ca3af;
+            font-size: 0.9em;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .info-item .value {
+            color: #fbbf24;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        
+        .cards-container {
+            background: rgba(0,0,0,0.2);
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .cards-grid {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .players-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .player-card {
+            background: rgba(0,0,0,0.3);
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .player-card.active {
+            border-color: #10b981;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+        }
+        
+        .player-card.current {
+            border-color: #fbbf24;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 15px rgba(251, 191, 36, 0.3); }
+            50% { box-shadow: 0 0 25px rgba(251, 191, 36, 0.6); }
+        }
+        
+        .player-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .player-name {
+            color: #e5e7eb;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        
+        .player-status {
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            background: #10b981;
+            color: white;
+        }
+        
+        .player-status.folded {
+            background: #dc2626;
+        }
+        
+        .player-status.allin {
+            background: #8b5cf6;
+        }
+        
+        .player-stats {
+            color: #9ca3af;
+            margin-bottom: 10px;
+        }
+        
+        .my-section {
+            background: rgba(16, 185, 129, 0.1);
+            padding: 30px;
+            border-radius: 10px;
+            border: 2px solid #10b981;
+        }
+        
+        .my-cards {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .my-cards .card {
+            width: 100px;
+            height: 150px;
+            font-size: 2em;
+        }
+        
+        .actions {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 120px;
+        }
+        
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn-fold {
+            background: #dc2626;
+            color: white;
+        }
+        
+        .btn-check {
+            background: #10b981;
+            color: white;
+        }
+        
+        .btn-call {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .btn-raise {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .btn-allin {
+            background: #8b5cf6;
+            color: white;
+        }
+        
+        .btn-new-game {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .game-controls {
+            background: rgba(0,0,0,0.2);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .messages {
+            background: rgba(0,0,0,0.2);
+            padding: 15px;
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        
+        .message {
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            color: #e5e7eb;
+            font-size: 0.9em;
+        }
+        
+        .message.success {
+            background: rgba(16, 185, 129, 0.2);
+            border-left: 3px solid #10b981;
+        }
+        
+        .message.error {
+            background: rgba(220, 38, 38, 0.2);
+            border-left: 3px solid #dc2626;
+        }
+        
+        .message.info {
+            background: rgba(59, 130, 246, 0.2);
+            border-left: 3px solid #3b82f6;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <header>
+            <div>
+                <h1>🃏 德州扑克</h1>
+                <span style="color: #9ca3af;">纯前端版本 - 无需服务器</span>
+            </div>
+            <div>
+                <button class="btn btn-new-game" onclick="startNewGame()">新游戏</button>
+            </div>
+        </header>
+
+        <div class="game-info">
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>游戏阶段</label>
+                    <div class="value" id="gameStage">等待开始</div>
+                </div>
+                <div class="info-item">
+                    <label>底池</label>
+                    <div class="value" id="pot">0</div>
+                </div>
+                <div class="info-item">
+                    <label>当前注额</label>
+                    <div class="value" id="currentBet">0</div>
+                </div>
+                <div class="info-item">
+                    <label>你的筹码</label>
+                    <div class="value" id="myChips">1000</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="cards-container">
+            <h3 style="color: #9ca3af; text-align: center; margin-bottom: 20px;">公共牌</h3>
+            <div class="cards-grid" id="communityCards">
+                <div style="color: #9ca3af;">等待发牌...</div>
+            </div>
+        </div>
+
+        <div class="players-section" id="playersSection">
+            <!-- 动态生成玩家卡片 -->
+        </div>
+
+        <div class="my-section" id="mySection" style="display: none;">
+            <h3 style="color: #e5e7eb; text-align: center; margin-bottom: 20px;">你的手牌</h3>
+            <div class="my-cards" id="myCards">
+                <!-- 动态生成手牌 -->
+            </div>
+            
+            <div class="actions" id="actions">
+                <button class="btn btn-fold" onclick="playerAction('fold')" id="btnFold">弃牌</button>
+                <button class="btn btn-check" onclick="playerAction('check')" id="btnCheck">过牌</button>
+                <button class="btn btn-call" onclick="playerAction('call')" id="btnCall">跟注</button>
+                <button class="btn btn-raise" onclick="playerAction('raise')" id="btnRaise">加注</button>
+                <button class="btn btn-allin" onclick="playerAction('allin')" id="btnAllin">全押</button>
+            </div>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-new-game" onclick="startNewGame()">开始新游戏</button>
+            <p style="color: #9ca3af; margin-top: 15px;">
+                支持2-6名玩家，包含AI对手
+            </p>
+        </div>
+
+        <div class="messages" id="messages">
+            <div class="message info">欢迎来到德州扑克！点击"开始新游戏"开始。</div>
+        </div>
+    </div>
+
+    <script src="/static/js/poker-standalone.js"></script>
+</body>
+</html>
