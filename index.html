@@ -697,7 +697,9 @@
             this.gameStage = 'waiting';
             this.smallBlind = 10;
             this.bigBlind = 20;
-            
+            this.bettingRoundStarted = false; // 标记本轮下注是否已经开始
+            this.firstBettorIndex = -1; // 本轮第一个下注的玩家位置
+
             this.initPlayers(playerCount);
         }
         
@@ -720,29 +722,31 @@
             this.pot = 0;
             this.currentBet = 0;
             this.gameStage = 'preflop';
-            
+            this.bettingRoundStarted = true; // preflop阶段下注已经开始了（盲注）
+            this.firstBettorIndex = (this.dealerPosition + 1) % this.players.length; // 小盲是第一个下注的
+
             // 重置玩家
             this.players.forEach(p => p.reset());
-            
+
             // 移除没有筹码的玩家
             this.players = this.players.filter(p => p.chips > 0);
-            
+
             if (this.players.length < 2) {
                 addMessage('游戏结束！你赢了！', 'success');
                 return;
             }
-            
+
             // 发手牌
             for (let i = 0; i < 2; i++) {
                 this.players.forEach(p => p.hand.push(this.deck.deal()));
             }
-            
+
             // 收取盲注
             this.collectBlinds();
-            
+
             this.updateUI();
             addMessage('游戏开始！', 'info');
-            
+
             // 如果当前玩家是AI，让AI行动
             if (this.players[this.currentPlayerIndex].isAI) {
                 setTimeout(() => this.aiTurn(), 1000);
@@ -770,15 +774,19 @@
         
         nextStage() {
             this.currentBet = 0;
-            this.players.forEach(p => p.currentBet = 0);
-            
+            this.players.forEach(p => {
+                p.currentBet = 0;
+                p.lastAction = ''; // 重置玩家的行动状态
+            });
+            this.bettingRoundStarted = false; // 重置下注轮次标记
+
             // 检查是否只剩下1个玩家
             const activePlayers = this.players.filter(p => !p.isFolded);
             if (activePlayers.length === 1) {
                 this.showdown();
                 return;
             }
-            
+
             // 检查是否所有玩家都All-in了
             const nonAllInPlayers = activePlayers.filter(p => !p.isAllIn);
             if (nonAllInPlayers.length === 0) {
@@ -790,7 +798,7 @@
                 this.showdown();
                 return;
             }
-            
+
             // 根据当前阶段决定下一阶段
             if (this.gameStage === 'preflop') {
                 this.dealCommunityCards(1); // 第1张公共牌
@@ -811,10 +819,11 @@
                 this.showdown();
                 return;
             }
-            
+
+            // 从小盲位置开始新的下注轮
             this.currentPlayerIndex = (this.dealerPosition + 1) % this.players.length;
             this.updateUI();
-            
+
             // 检查当前玩家是否是AI
             if (this.players[this.currentPlayerIndex].isAI) {
                 setTimeout(() => this.aiTurn(), 1000);
@@ -856,23 +865,27 @@
         
         playerAction(action, amount = 0) {
             const player = this.players[this.currentPlayerIndex];
-            
+
             if (player.isFolded || player.isAllIn) {
                 this.nextPlayer();
                 return;
             }
-            
+
             switch(action) {
                 case 'fold':
                     player.fold();
                     break;
                 case 'check':
-                    if (player.currentBet >= this.currentBet) {
-                        player.lastAction = '过牌';
-                    } else {
-                        addMessage('无法过牌，需要跟注', 'error');
+                    // 过牌条件：所有未弃牌玩家的下注都相等
+                    const activePlayers = this.players.filter(p => !p.isFolded);
+                    const allBetsEqual = activePlayers.every(p => p.currentBet === this.currentBet);
+
+                    if (!allBetsEqual) {
+                        addMessage('不能过牌！当前赌注不一致，请选择弃牌或跟注', 'error');
                         return;
                     }
+
+                    player.lastAction = '过牌';
                     break;
                 case 'call':
                     const callAmount = this.currentBet - player.currentBet;
@@ -901,9 +914,9 @@
                     }
                     break;
             }
-            
+
             addMessage(`${player.name}: ${player.lastAction}`, 'info');
-            
+
             if (this.checkRoundComplete()) {
                 this.nextStage();
             } else {
@@ -926,13 +939,26 @@
         
         checkRoundComplete() {
             const activePlayers = this.players.filter(p => !p.isFolded && !p.isAllIn);
-            
+
+            // 如果只剩1个玩家，回合结束
             if (activePlayers.length <= 1) return true;
-            
-            const allMatched = activePlayers.every(p => p.currentBet === this.currentBet);
+
+            // 所有未弃牌玩家的下注必须相等
+            const allBetsEqual = activePlayers.every(p => p.currentBet === this.currentBet);
+            if (!allBetsEqual) return false;
+
+            // 检查所有玩家是否都已行动
+            // 对于preflop阶段，需要从大盲后的玩家开始检查
+            // 对于其他阶段，需要从第一个行动的玩家开始检查一轮
             const allActed = activePlayers.every(p => p.lastAction !== '');
-            
-            return allMatched && allActed;
+
+            if (!allActed) return false;
+
+            // 如果这是新一轮下注的开始（第一个玩家行动），且没有加注，那么需要所有玩家都行动过
+            // 这里我们使用一个更简单的方法：检查当前玩家是否已经完成了一整轮
+            // 即：从第一个下注的玩家开始，所有未弃牌未allin的玩家都至少行动过一次
+
+            return true;
         }
         
         aiTurn() {
